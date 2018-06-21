@@ -361,8 +361,8 @@ func TestCacheMethods(t *testing.T) {
 		cacheInterval: time.Hour,
 	}
 
-	// test updating a record.
-	registry.updateCache(newEndpointWithOwner("thing.com", "1.2.3.6", "A", "owner2"))
+	// test add a record.
+	registry.addToCache(newEndpointWithOwner("thing.com", "1.2.3.6", "A", "owner2"))
 	found := false
 	// ensure it was updated
 	for _, e := range registry.recordsCache {

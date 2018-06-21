@@ -127,10 +127,7 @@ func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true))
 		filteredChanges.Create = append(filteredChanges.Create, txt)
 
-		// Add to the cache.
-		if im.recordsCache != nil {
-			im.recordsCache = append(im.recordsCache, txt)
-		}
+		im.addToCache(r)
 	}
 
 	for _, r := range filteredChanges.Delete {
@@ -141,26 +138,25 @@ func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
 		filteredChanges.Delete = append(filteredChanges.Delete, txt)
 
 		// Remove from the cache.
-		im.removeFromCache(txt)
+		im.removeFromCache(r)
 	}
 
-	// make sure TXT records are consistently updated as well
-	for _, r := range filteredChanges.UpdateNew {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true))
-		filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, txt)
-
-		// Update the cache.
-		im.updateCache(txt)
-	}
 	// make sure TXT records are consistently updated as well
 	for _, r := range filteredChanges.UpdateOld {
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true))
 		// when we updateOld TXT records for which value has changed (due to new label) this would still work because
 		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
 		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, txt)
+		// remove old version of record from cache
+		im.removeFromCache(r)
+	}
 
-		// Update the cache.
-		im.updateCache(txt)
+	// make sure TXT records are consistently updated as well
+	for _, r := range filteredChanges.UpdateNew {
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true))
+		filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, txt)
+		// add new version of record to cache
+		im.addToCache(r)
 	}
 
 	return im.provider.ApplyChanges(filteredChanges)
@@ -201,35 +197,23 @@ func (pr prefixNameMapper) toTXTName(endpointDNSName string) string {
 	return pr.prefix + endpointDNSName
 }
 
-func (im *TXTRegistry) removeFromCache(txt *endpoint.Endpoint) {
-	if im.recordsCache == nil || txt == nil {
+func (im *TXTRegistry) addToCache(ep *endpoint.Endpoint) {
+	if im.recordsCache != nil {
+		im.recordsCache = append(im.recordsCache, ep)
+	}
+}
+
+func (im *TXTRegistry) removeFromCache(ep *endpoint.Endpoint) {
+	if im.recordsCache == nil || ep == nil {
 		// return early.
 		return
 	}
 
 	for i, e := range im.recordsCache {
-		if e.DNSName == txt.DNSName && e.RecordType == txt.RecordType {
+		if e.DNSName == ep.DNSName && e.RecordType == ep.RecordType && e.Targets.Same(ep.Targets) {
 			// We found a match delete the endpoint from the cache.
 			im.recordsCache = append(im.recordsCache[:i], im.recordsCache[i+1:]...)
 			return
 		}
 	}
-}
-
-func (im *TXTRegistry) updateCache(txt *endpoint.Endpoint) {
-	if im.recordsCache == nil || txt == nil {
-		// return early.
-		return
-	}
-
-	for i, e := range im.recordsCache {
-		if e.DNSName == txt.DNSName && e.RecordType == txt.RecordType {
-			// We found a match update the endpoint in the cache.
-			im.recordsCache[i] = txt
-			return
-		}
-	}
-
-	// We couldn't find a match so let's just add it to the cache.
-	im.recordsCache = append(im.recordsCache, txt)
 }
