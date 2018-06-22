@@ -208,7 +208,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("txt-prefix", "When using the TXT registry, a custom string that's prefixed to each ownership DNS record (optional)").Default(defaultConfig.TXTPrefix).StringVar(&cfg.TXTPrefix)
 
 	// Flags related to the main control loop
-	app.Flag("txt-cache-enabled", "Enable to cache records (default: false)").BoolVar(&cfg.TXTCacheEnabled)
+	app.Flag("txt-cache-enabled", "Enable caching to limit calls to providers (default: false)").BoolVar(&cfg.TXTCacheEnabled)
 	app.Flag("txt-cache-interval", "The interval between cache synchronizations in duration format (default: 1h)").Default(defaultConfig.TXTCacheInterval.String()).DurationVar(&cfg.TXTCacheInterval)
 	app.Flag("interval", "The interval between two consecutive synchronizations in duration format (default: 1m)").Default(defaultConfig.Interval.String()).DurationVar(&cfg.Interval)
 	app.Flag("once", "When enabled, exits the synchronization loop after the first iteration (default: disabled)").BoolVar(&cfg.Once)
