@@ -210,6 +210,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_REGISTRY":                "noop",
 				"EXTERNAL_DNS_TXT_OWNER_ID":            "owner-1",
 				"EXTERNAL_DNS_TXT_PREFIX":              "associated-txt-record",
+				"EXTERNAL_DNS_TXT_CACHE_ENABLED":       "1",
 				"EXTERNAL_DNS_TXT_CACHE_INTERVAL":      "12h",
 				"EXTERNAL_DNS_INTERVAL":                "10m",
 				"EXTERNAL_DNS_ONCE":                    "1",
