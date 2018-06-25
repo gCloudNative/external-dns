@@ -42,10 +42,10 @@ func TestTXTRegistry(t *testing.T) {
 
 func testTXTRegistryNew(t *testing.T) {
 	p := provider.NewInMemoryProvider()
-	_, err := NewTXTRegistry(p, "txt", "", true, time.Hour)
+	_, err := NewTXTRegistry(p, "txt", "", time.Hour)
 	require.Error(t, err)
 
-	r, err := NewTXTRegistry(p, "txt", "owner", true, time.Hour)
+	r, err := NewTXTRegistry(p, "txt", "owner", time.Hour)
 	require.NoError(t, err)
 
 	_, ok := r.mapper.(prefixNameMapper)
@@ -53,7 +53,7 @@ func testTXTRegistryNew(t *testing.T) {
 	assert.Equal(t, "owner", r.ownerID)
 	assert.Equal(t, p, r.provider)
 
-	r, err = NewTXTRegistry(p, "", "owner", true, time.Hour)
+	r, err = NewTXTRegistry(p, "", "owner", time.Hour)
 	require.NoError(t, err)
 
 	_, ok = r.mapper.(prefixNameMapper)
@@ -132,7 +132,7 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 		},
 	}
 
-	r, _ := NewTXTRegistry(p, "txt.", "owner", true, time.Hour)
+	r, _ := NewTXTRegistry(p, "txt.", "owner", time.Hour)
 	records, _ := r.Records()
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
@@ -206,7 +206,7 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 		},
 	}
 
-	r, _ := NewTXTRegistry(p, "", "owner", true, time.Hour)
+	r, _ := NewTXTRegistry(p, "", "owner", time.Hour)
 	records, _ := r.Records()
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
@@ -233,7 +233,7 @@ func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 			newEndpointWithOwner("txt.foobar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 		},
 	})
-	r, _ := NewTXTRegistry(p, "txt.", "owner", true, time.Hour)
+	r, _ := NewTXTRegistry(p, "txt.", "owner", time.Hour)
 
 	changes := &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -302,7 +302,7 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 			newEndpointWithOwner("foobar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 		},
 	})
-	r, _ := NewTXTRegistry(p, "", "owner", true, time.Hour)
+	r, _ := NewTXTRegistry(p, "", "owner", time.Hour)
 
 	changes := &plan.Changes{
 		Create: []*endpoint.Endpoint{

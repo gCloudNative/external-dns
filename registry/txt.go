@@ -38,11 +38,10 @@ type TXTRegistry struct {
 	recordsCache            []*endpoint.Endpoint
 	recordsCacheRefreshTime time.Time
 	cacheInterval           time.Duration
-	cacheEnabled            bool
 }
 
 // NewTXTRegistry returns new TXTRegistry object
-func NewTXTRegistry(provider provider.Provider, txtPrefix, ownerID string, cacheEnabled bool, cacheInterval time.Duration) (*TXTRegistry, error) {
+func NewTXTRegistry(provider provider.Provider, txtPrefix, ownerID string, cacheInterval time.Duration) (*TXTRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
@@ -53,7 +52,6 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, ownerID string, cache
 		provider:      provider,
 		ownerID:       ownerID,
 		mapper:        mapper,
-		cacheEnabled:  cacheEnabled,
 		cacheInterval: cacheInterval,
 	}, nil
 }
@@ -64,7 +62,7 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, ownerID string, cache
 func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 	// If we have the zones cached AND we have refreshed the cache since the
 	// last given interval, then just use the cached results.
-	if im.cacheEnabled && im.recordsCache != nil && time.Since(im.recordsCacheRefreshTime) < im.cacheInterval {
+	if im.recordsCache != nil && time.Since(im.recordsCacheRefreshTime) < im.cacheInterval {
 		log.Debug("Using cached records.")
 		return im.recordsCache, nil
 	}
@@ -109,7 +107,7 @@ func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 	}
 
 	// Update the cache.
-	if im.cacheEnabled {
+	if im.cacheInterval > 0 {
 		im.recordsCache = endpoints
 		im.recordsCacheRefreshTime = time.Now()
 	}
@@ -131,7 +129,7 @@ func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true))
 		filteredChanges.Create = append(filteredChanges.Create, txt)
 
-		if im.cacheEnabled {
+		if im.cacheInterval > 0 {
 			im.addToCache(r)
 		}
 	}
@@ -143,7 +141,7 @@ func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
 		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
 		filteredChanges.Delete = append(filteredChanges.Delete, txt)
 
-		if im.cacheEnabled {
+		if im.cacheInterval > 0 {
 			im.removeFromCache(r)
 		}
 	}
@@ -155,7 +153,7 @@ func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
 		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
 		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, txt)
 		// remove old version of record from cache
-		if im.cacheEnabled {
+		if im.cacheInterval > 0 {
 			im.removeFromCache(r)
 		}
 	}
@@ -165,7 +163,7 @@ func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true))
 		filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, txt)
 		// add new version of record to cache
-		if im.cacheEnabled {
+		if im.cacheInterval > 0 {
 			im.addToCache(r)
 		}
 	}
